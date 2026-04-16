@@ -31,11 +31,11 @@ pip install -e ".[dev]"
 ## Usage
 
 ```python
-from trading_platform.pipeline import BasePipeline, PriorityQueue
-from trading_platform.risk import RuleBasedPolicy, CircuitBreaker
-from trading_platform.alerting.base_alerter import BaseAlerter
-from trading_platform.observability.metrics import MetricsCollector
-from trading_platform.data.cache import TTLCache
+from pipeline import BasePipeline, PriorityQueue
+from risk import RuleBasedPolicy, CircuitBreaker
+from alerting.base_alerter import BaseAlerter
+from observability.metrics import MetricsCollector
+from data.cache import TTLCache
 ```
 
 ## Design Principles

@@ -10,9 +10,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from trading_platform.config.env import find_env_file, load_env
-from trading_platform.pipeline.base_pipeline import BasePipeline
-from trading_platform.risk.base_policy import RiskVerdict, RuleBasedPolicy
+from config.env import find_env_file, load_env
+from pipeline.base_pipeline import BasePipeline
+from risk.base_policy import RiskVerdict, RuleBasedPolicy
 
 
 class AlwaysApproveRule:

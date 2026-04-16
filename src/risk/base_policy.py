@@ -5,7 +5,7 @@ any failure is a hard veto. This enforces "capital preservation > profit"
 across all products.
 
 Usage:
-    from trading_platform.risk import RuleBasedPolicy, RiskRule, RiskVerdict
+    from risk import RuleBasedPolicy, RiskRule, RiskVerdict
 
     class MinProfitRule:
         name = "min_profit"
