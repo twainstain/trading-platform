@@ -1,22 +1,22 @@
-"""Tests for trading_platform.alerting — BaseAlerter and AlertDispatcher."""
+"""Tests for alerting — BaseAlerter and AlertDispatcher."""
 
 import sys
 import unittest
+from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from alerting.base_alerter import BaseAlerter
-from alerting.dispatcher import AlertDispatcher
+from alerting import AlertDispatcher, BaseAlerter
 
-
-# ── Helpers ──────────────────────────────────────────────────────────
 
 class FakeEmail:
     def __init__(self, configured=True):
         self.configured = configured
         self.sent = []
+
     def send(self, event_type, message, details=None, html_body=None):
         self.sent.append((event_type, message, details, html_body))
         return True
@@ -27,23 +27,23 @@ class FakeBackend:
         self._name = name
         self.configured = configured
         self.sent = []
+
     @property
     def name(self):
         return self._name
+
     def send(self, event_type, message, details=None):
         self.sent.append((event_type, message))
         return True
 
 
 class ConcreteAlerter(BaseAlerter):
-    """Test implementation with overridden report builders."""
     def build_hourly_report(self):
         return ("hourly plain", "<h1>hourly</h1>", {"type": "hourly"})
+
     def build_daily_report(self):
         return ("daily plain", "<h1>daily</h1>", {"type": "daily"})
 
-
-# ── BaseAlerter Tests ────────────────────────────────────────────────
 
 class AlerterTests(unittest.TestCase):
     def test_send_hourly_report(self):
@@ -64,12 +64,12 @@ class AlerterTests(unittest.TestCase):
     def test_no_crash_when_email_unconfigured(self):
         email = FakeEmail(configured=False)
         alerter = ConcreteAlerter(email=email)
-        alerter.send_hourly_report()  # should not crash
+        alerter.send_hourly_report()
         self.assertEqual(len(email.sent), 0)
 
     def test_no_crash_when_email_none(self):
         alerter = ConcreteAlerter(email=None)
-        alerter.send_hourly_report()  # should not crash
+        alerter.send_hourly_report()
 
     def test_maybe_send_hourly_respects_interval(self):
         email = FakeEmail()
@@ -79,10 +79,8 @@ class AlerterTests(unittest.TestCase):
 
     def test_maybe_send_daily_skips_if_already_sent_today(self):
         email = FakeEmail()
-        alerter = ConcreteAlerter(email=email)
-        from datetime import datetime, timedelta, timezone
-        tz = timezone(timedelta(hours=-5))
-        today = datetime.now(tz).strftime("%Y-%m-%d")
+        alerter = ConcreteAlerter(email=email, daily_timezone="America/New_York")
+        today = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
         alerter._last_daily_date = today
         alerter.maybe_send_daily()
         self.assertEqual(len(email.sent), 0)
@@ -91,14 +89,32 @@ class AlerterTests(unittest.TestCase):
         alerter = ConcreteAlerter()
         self.assertEqual(alerter._daily_hour, 9)
 
+    def test_daily_timezone_default(self):
+        alerter = ConcreteAlerter()
+        self.assertEqual(alerter._daily_tz.key, "UTC")
+
+    def test_maybe_send_daily_uses_named_timezone(self):
+        email = FakeEmail()
+        alerter = ConcreteAlerter(email=email, daily_hour=9, daily_timezone="America/New_York")
+        fake_now = datetime(2026, 7, 1, 9, 15, tzinfo=ZoneInfo("America/New_York"))
+
+        with patch("alerting.base_alerter.datetime") as mock_datetime:
+            mock_datetime.now.return_value = fake_now
+            alerter.maybe_send_daily()
+
+        self.assertEqual(len(email.sent), 1)
+        self.assertEqual(email.sent[0][0], "daily_summary")
+        self.assertEqual(alerter._last_daily_date, "2026-07-01")
+
+    def test_invalid_timezone_raises(self):
+        with self.assertRaises(Exception):
+            ConcreteAlerter(daily_timezone="Not/A_Real_Timezone")
+
     def test_build_not_implemented_logs_error(self):
-        """BaseAlerter without overrides should log error, not crash."""
         alerter = BaseAlerter(email=FakeEmail())
-        alerter.send_hourly_report()  # should not crash — logs error instead
-        self.assertEqual(len(alerter.email.sent), 0)  # nothing sent
+        alerter.send_hourly_report()
+        self.assertEqual(len(alerter.email.sent), 0)
 
-
-# ── Dispatcher Tests ─────────────────────────────────────────────────
 
 class DispatcherTests(unittest.TestCase):
     def test_add_configured_backend(self):
@@ -125,11 +141,13 @@ class DispatcherTests(unittest.TestCase):
         class FailBackend:
             name = "fail"
             configured = True
+
             def send(self, *a, **kw):
                 raise RuntimeError("boom")
+
         d = AlertDispatcher()
         d.add_backend(FailBackend())
-        d.alert("test", "msg")  # should not raise
+        d.alert("test", "msg")
 
 
 if __name__ == "__main__":

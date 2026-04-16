@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -10,9 +11,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from config.env import find_env_file, load_env
-from pipeline.base_pipeline import BasePipeline
-from risk.base_policy import RiskVerdict, RuleBasedPolicy
+from config import find_env_file, load_env
+from pipeline import BasePipeline
+from contracts import RiskVerdict
+from risk import RuleBasedPolicy
 
 
 class AlwaysApproveRule:
@@ -109,3 +111,34 @@ class TradingPlatformEnvTests(unittest.TestCase):
                 os.environ.pop(key, None)
             else:
                 os.environ[key] = old
+
+
+class TradingPlatformImportSmokeTests(unittest.TestCase):
+    def test_public_modules_import_via_src_pythonpath(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(repo_root / "src")
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import alerting, config, contracts, data, observability, pipeline, risk; "
+                    "from alerting import AlertDispatcher, BaseAlerter; "
+                    "from config import find_env_file, load_env; "
+                    "from contracts import RiskVerdict, SubmissionRef, VerificationOutcome; "
+                    "from data import TTLCache; "
+                    "from observability import MetricsCollector; "
+                    "from pipeline import BasePipeline, PipelineResult, PriorityQueue; "
+                    "from risk import RuleBasedPolicy, CircuitBreaker"
+                ),
+            ],
+            cwd=repo_root,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)

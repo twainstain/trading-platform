@@ -57,8 +57,6 @@ class MetricsCollector:
         """Return a point-in-time snapshot of all metrics."""
         with self._lock:
             uptime = time.time() - self._start_time
-            uptime_min = max(uptime / 60, 1)
-
             avg_latency = sum(self._latencies) / len(self._latencies) if self._latencies else 0
             sorted_lat = sorted(self._latencies) if self._latencies else []
             p95_latency = sorted_lat[int(len(sorted_lat) * 0.95)] if sorted_lat else 0

@@ -1,4 +1,4 @@
-"""Tests for trading_platform.pipeline — BasePipeline and PriorityQueue."""
+"""Tests for pipeline — BasePipeline and PriorityQueue."""
 
 import sys
 import unittest
@@ -7,15 +7,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from pipeline.base_pipeline import BasePipeline, PipelineResult, ZERO
-from risk.base_policy import RiskVerdict
-from pipeline.queue import PriorityQueue, QueuedItem
+from contracts import RiskVerdict, SubmissionRef, VerificationOutcome
+from pipeline import BasePipeline, PipelineResult, PriorityQueue, QueuedItem
+from pipeline.base_pipeline import ZERO
 
-
-# ── Helpers ──────────────────────────────────────────────────────────
 
 class StubPipeline(BasePipeline):
     """Minimal pipeline for testing."""
+
     def __init__(self, verdict=None, **kwargs):
         super().__init__(**kwargs)
         self._verdict = verdict or RiskVerdict(True, "ok")
@@ -57,26 +56,38 @@ class StubSimulator:
     def __init__(self, success=True, reason="ok"):
         self._success = success
         self._reason = reason
+
     def simulate(self, candidate):
         return (self._success, self._reason)
 
 
 class StubSubmitter:
-    def __init__(self, tx_hash="0xabc"):
-        self._tx_hash = tx_hash
+    def __init__(self, reference_id="submission-1", kind="transaction"):
+        self._reference_id = reference_id
+        self._kind = kind
+
     def submit(self, candidate):
-        return {"tx_hash": self._tx_hash, "submission_type": "test"}
+        return SubmissionRef(
+            reference_id=self._reference_id,
+            kind=self._kind,
+            metadata={"candidate": candidate},
+        )
 
 
 class StubVerifier:
-    def __init__(self, status="included", profit=0.005):
+    def __init__(self, status="included", profit=0.005, reason="verified"):
         self._status = status
         self._profit = profit
-    def verify(self, ref):
-        return {"status": self._status, "net_profit": self._profit, "ref": ref}
+        self._reason = reason
 
+    def verify(self, submission):
+        return VerificationOutcome(
+            final_status=self._status,
+            reason=self._reason,
+            profit=Decimal(str(self._profit)),
+            metadata={"reference_id": submission.reference_id},
+        )
 
-# ── Pipeline Tests ───────────────────────────────────────────────────
 
 class PipelineBasicTests(unittest.TestCase):
     def test_approved_candidate_returns_dry_run_without_submitter(self):
@@ -116,7 +127,7 @@ class PipelineBasicTests(unittest.TestCase):
         pipe = StubPipeline(
             verdict=RiskVerdict(True, "ok"),
             simulator=StubSimulator(),
-            submitter=StubSubmitter(tx_hash="0xfull"),
+            submitter=StubSubmitter(reference_id="submission-full"),
             verifier=StubVerifier(status="included", profit=0.01),
         )
         result = pipe.process("candidate-1")
@@ -124,6 +135,7 @@ class PipelineBasicTests(unittest.TestCase):
         self.assertAlmostEqual(float(result.net_profit), 0.01, places=4)
         self.assertEqual(len(pipe.submitted), 1)
         self.assertEqual(len(pipe.verified), 1)
+        self.assertEqual(pipe.submitted[0][1].reference_id, "submission-full")
 
     def test_submitted_without_verifier(self):
         pipe = StubPipeline(
@@ -147,15 +159,20 @@ class PipelineBasicTests(unittest.TestCase):
         result = pipe.process("test-candidate")
         self.assertEqual(result.candidate_id, "id-1")
 
+    def test_pipeline_result_defaults_zero_profit(self):
+        result = PipelineResult(candidate_id="c1", final_status="ok", reason="ok")
+        self.assertEqual(result.net_profit, ZERO)
 
-# ── Queue Tests ──────────────────────────────────────────────────────
 
 class QueueBasicTests(unittest.TestCase):
+    def test_default_max_size(self):
+        q = PriorityQueue()
+        self.assertEqual(q.stats()["max_size"], 333)
+
     def test_push_and_pop(self):
         q = PriorityQueue(max_size=10)
         q.push("item-A", priority=0.5)
         q.push("item-B", priority=0.9)
-        # Highest priority popped first
         result = q.pop()
         self.assertEqual(result.item, "item-B")
         self.assertAlmostEqual(result.priority, 0.9)
@@ -177,11 +194,9 @@ class QueueBasicTests(unittest.TestCase):
         q.push("low", priority=0.1)
         q.push("mid", priority=0.5)
         q.push("high", priority=0.9)
-        # Queue is full. Push a higher priority item.
         accepted = q.push("higher", priority=0.95)
         self.assertTrue(accepted)
         self.assertEqual(q.size, 3)
-        # The lowest (0.1) should have been evicted.
         items = []
         while not q.is_empty:
             items.append(q.pop().item)
@@ -192,7 +207,6 @@ class QueueBasicTests(unittest.TestCase):
         q = PriorityQueue(max_size=2)
         q.push("a", priority=0.8)
         q.push("b", priority=0.9)
-        # Try to push something worse than both
         accepted = q.push("worse", priority=0.1)
         self.assertFalse(accepted)
         self.assertEqual(q.size, 2)
@@ -203,7 +217,6 @@ class QueueBasicTests(unittest.TestCase):
             q.push(f"item-{i}", priority=i * 0.1)
         batch = q.pop_batch(3)
         self.assertEqual(len(batch), 3)
-        # Highest priority first
         priorities = [b.priority for b in batch]
         self.assertEqual(priorities, sorted(priorities, reverse=True))
         self.assertEqual(q.size, 2)
@@ -220,26 +233,28 @@ class QueueBasicTests(unittest.TestCase):
         q = PriorityQueue(max_size=2)
         q.push("a", 1.0)
         q.push("b", 2.0)
-        q.push("c", 3.0)  # evicts lowest
-        s = q.stats()
-        self.assertEqual(s["current_size"], 2)
-        self.assertEqual(s["max_size"], 2)
-        self.assertEqual(s["total_enqueued"], 3)
-        self.assertEqual(s["total_dropped"], 1)
+        q.push("c", 0.5)
+        stats = q.stats()
+        self.assertEqual(stats["current_size"], 2)
+        self.assertEqual(stats["max_size"], 2)
+        self.assertEqual(stats["total_enqueued"], 3)
+        self.assertEqual(stats["total_dropped"], 1)
 
     def test_fifo_at_equal_priority(self):
         q = PriorityQueue(max_size=10)
         q.push("first", priority=1.0)
         q.push("second", priority=1.0)
-        # FIFO: first pushed should be popped first at equal priority
-        result = q.pop()
-        self.assertEqual(result.item, "first")
+        q.push("third", priority=1.0)
+        self.assertEqual(q.pop().item, "first")
+        self.assertEqual(q.pop().item, "second")
+        self.assertEqual(q.pop().item, "third")
 
     def test_metadata_preserved(self):
-        q = PriorityQueue()
-        q.push("item", priority=1.0, metadata={"chain": "arbitrum"})
-        result = q.pop()
-        self.assertEqual(result.metadata["chain"], "arbitrum")
+        q = PriorityQueue(max_size=10)
+        q.push("item", priority=1.0, metadata={"source": "scanner"})
+        queued = q.pop()
+        self.assertIsInstance(queued, QueuedItem)
+        self.assertEqual(queued.metadata["source"], "scanner")
 
 
 if __name__ == "__main__":

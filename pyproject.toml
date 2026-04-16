@@ -21,5 +21,8 @@ api = ["fastapi>=0.100", "uvicorn>=0.20"]
 all = ["trading-platform[postgres,alerting,api]"]
 dev = ["pytest>=7.0", "trading-platform[all]"]
 
+[tool.setuptools]
+py-modules = ["config", "contracts", "data", "observability"]
+
 [tool.setuptools.packages.find]
 where = ["src"]

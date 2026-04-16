@@ -1,4 +1,4 @@
-"""Tests for trading_platform.observability — MetricsCollector."""
+"""Tests for observability — MetricsCollector."""
 
 import sys
 import unittest
@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from observability.metrics import MetricsCollector
+from observability import MetricsCollector
 
 
 class MetricsTests(unittest.TestCase):

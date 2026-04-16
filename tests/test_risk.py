@@ -1,4 +1,4 @@
-"""Tests for trading_platform.risk — RuleBasedPolicy and CircuitBreaker."""
+"""Tests for risk — RuleBasedPolicy and CircuitBreaker."""
 
 import sys
 import time
@@ -7,37 +7,39 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from risk.base_policy import RiskRule, RiskVerdict, RuleBasedPolicy
-from risk.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, BreakerState
+from contracts import RiskVerdict
+from risk import BreakerState, CircuitBreaker, CircuitBreakerConfig, RiskRule, RuleBasedPolicy
 
-
-# ── Rule helpers ─────────────────────────────────────────────────────
 
 class ApproveRule:
     name = "approve"
+
     def evaluate(self, candidate, context):
         return RiskVerdict(True, "ok")
 
+
 class RejectRule:
     name = "reject"
+
     def evaluate(self, candidate, context):
         return RiskVerdict(False, "rejected", {"rule": self.name})
 
+
 class ThresholdRule:
-    """Rejects if candidate['value'] < context['min_value']."""
     name = "threshold"
+
     def evaluate(self, candidate, context):
         if candidate.get("value", 0) < context.get("min_value", 0):
             return RiskVerdict(False, "below_threshold")
         return RiskVerdict(True, "ok")
 
+
 class CrashingRule:
     name = "crasher"
+
     def evaluate(self, candidate, context):
         raise RuntimeError("rule crashed")
 
-
-# ── Policy Tests ─────────────────────────────────────────────────────
 
 class PolicyBasicTests(unittest.TestCase):
     def test_empty_policy_approves(self):
@@ -58,7 +60,6 @@ class PolicyBasicTests(unittest.TestCase):
         self.assertEqual(verdict.reason, "rejected")
 
     def test_first_failure_stops_evaluation(self):
-        """Second rule should never run if first rejects."""
         policy = RuleBasedPolicy(rules=[RejectRule(), ApproveRule()])
         verdict = policy.evaluate({"id": 1})
         self.assertFalse(verdict.approved)
@@ -70,10 +71,8 @@ class PolicyBasicTests(unittest.TestCase):
 
     def test_context_passed_to_rules(self):
         policy = RuleBasedPolicy(rules=[ThresholdRule()])
-        # Below threshold
         v1 = policy.evaluate({"value": 5}, min_value=10)
         self.assertFalse(v1.approved)
-        # Above threshold
         v2 = policy.evaluate({"value": 15}, min_value=10)
         self.assertTrue(v2.approved)
 
@@ -101,8 +100,9 @@ class PolicyBasicTests(unittest.TestCase):
         verdict = policy.evaluate({"id": 1})
         self.assertFalse(verdict.approved)
 
+    def test_risk_rule_protocol_shape_is_reusable(self):
+        self.assertTrue(hasattr(RiskRule, "__module__"))
 
-# ── Circuit Breaker Tests ────────────────────────────────────────────
 
 class BreakerBasicTests(unittest.TestCase):
     def test_starts_closed(self):
@@ -144,7 +144,6 @@ class BreakerBasicTests(unittest.TestCase):
         cb.record_failure()
         self.assertTrue(cb.should_block())
         time.sleep(0.02)
-        # Should transition to HALF_OPEN
         self.assertEqual(cb.state, BreakerState.HALF_OPEN)
         self.assertFalse(cb.should_block())
 
@@ -153,7 +152,7 @@ class BreakerBasicTests(unittest.TestCase):
         cb = CircuitBreaker(config)
         cb.record_failure()
         time.sleep(0.02)
-        _ = cb.state  # trigger HALF_OPEN
+        _ = cb.state
         cb.record_success()
         self.assertEqual(cb.state, BreakerState.CLOSED)
 
@@ -162,7 +161,7 @@ class BreakerBasicTests(unittest.TestCase):
         cb = CircuitBreaker(config)
         cb.record_failure()
         time.sleep(0.02)
-        _ = cb.state  # trigger HALF_OPEN
+        _ = cb.state
         cb.record_failure()
         self.assertEqual(cb.state, BreakerState.OPEN)
 

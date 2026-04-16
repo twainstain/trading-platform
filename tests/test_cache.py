@@ -1,4 +1,4 @@
-"""Tests for trading_platform.data — TTLCache."""
+"""Tests for data — TTLCache."""
 
 import sys
 import time
@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from data.cache import TTLCache
+from data import TTLCache
 
 
 class CacheBasicTests(unittest.TestCase):

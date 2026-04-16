@@ -1,17 +1,40 @@
-"""Trading Platform — shared infrastructure for trading products.
+"""Trading Platform shared infrastructure library."""
 
-Provides reusable components for building trading bots:
-  - pipeline: 6-stage candidate lifecycle with priority queue
-  - risk: rule-based evaluation framework with circuit breaker
-  - alerting: multi-backend notifications (email, Telegram, Discord)
-  - observability: metrics, latency tracking, logging
-  - persistence: database layer (SQLite + Postgres)
-  - api: FastAPI base app with auth, health, controls
-  - config: environment and configuration loading
-  - data: caching and failover utilities
+from alerting import AlertDispatcher, BaseAlerter
+from config import find_env_file, get_env, load_env, require_env
+from contracts import RiskVerdict, SubmissionRef, VerificationOutcome
+from data import TTLCache
+from observability import MetricsCollector
+from pipeline import BasePipeline, PipelineResult, PriorityQueue, QueuedItem
+from risk import (
+    BreakerState,
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    RiskRule,
+    RuleBasedPolicy,
+)
 
-Products (ArbitrageTrader, PolymarketTrader) import from here and
-plug in their own strategy, execution, and market data layers.
-"""
+__all__ = [
+    "AlertDispatcher",
+    "BaseAlerter",
+    "BasePipeline",
+    "BreakerState",
+    "CircuitBreaker",
+    "CircuitBreakerConfig",
+    "MetricsCollector",
+    "PipelineResult",
+    "PriorityQueue",
+    "QueuedItem",
+    "RiskRule",
+    "RiskVerdict",
+    "RuleBasedPolicy",
+    "SubmissionRef",
+    "TTLCache",
+    "VerificationOutcome",
+    "find_env_file",
+    "get_env",
+    "load_env",
+    "require_env",
+]
 
 __version__ = "0.1.0"

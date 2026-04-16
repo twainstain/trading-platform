@@ -1,8 +1,14 @@
-"""Risk — rule-based evaluation framework and circuit breaker."""
-from risk.base_policy import RiskRule, RiskVerdict, RuleBasedPolicy
+"""Risk framework primitives for trading_platform."""
+
+from contracts import RiskVerdict
+from risk.base_policy import RiskRule, RuleBasedPolicy
 from risk.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, BreakerState
 
 __all__ = [
-    "RiskRule", "RiskVerdict", "RuleBasedPolicy",
-    "CircuitBreaker", "CircuitBreakerConfig", "BreakerState",
+    "BreakerState",
+    "CircuitBreaker",
+    "CircuitBreakerConfig",
+    "RiskRule",
+    "RiskVerdict",
+    "RuleBasedPolicy",
 ]

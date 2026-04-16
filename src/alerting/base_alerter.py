@@ -9,9 +9,10 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from threading import Thread
 from typing import Protocol
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class BaseAlerter:
         email: EmailBackend | None = None,
         email_interval_seconds: float = 3600.0,
         daily_hour: int = 9,
-        daily_tz_offset_hours: int = -5,  # EST
+        daily_timezone: str = "UTC",
         startup_delay_seconds: float = 300.0,
     ) -> None:
         self.email = email
@@ -47,7 +48,7 @@ class BaseAlerter:
         self._last_email_at: float = time.time() - email_interval_seconds + startup_delay_seconds
         self._last_daily_date: str = ""
         self._daily_hour = daily_hour
-        self._daily_tz = timezone(timedelta(hours=daily_tz_offset_hours))
+        self._daily_tz = ZoneInfo(daily_timezone)
         self._thread: Thread | None = None
         self._running = False
 
