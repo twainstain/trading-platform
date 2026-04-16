@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "trading-platform"
+version = "0.1.0"
+description = "Shared infrastructure for building trading bots"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [{name = "Tamir Wainstain"}]
+
+dependencies = [
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+postgres = ["psycopg2-binary>=2.9"]
+alerting = ["requests>=2.28"]
+api = ["fastapi>=0.100", "uvicorn>=0.20"]
+all = ["trading-platform[postgres,alerting,api]"]
+dev = ["pytest>=7.0", "trading-platform[all]"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
