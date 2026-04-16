@@ -1,0 +1,37 @@
+{
+  "pairs": [
+    {
+      "name": "WETH/USDC",
+      "base_price": 3008.0,
+      "venues": [
+        {"name": "VenueA", "fee_bps": 30, "volatility_bps": 18},
+        {"name": "VenueB", "fee_bps": 30, "volatility_bps": 22},
+        {"name": "VenueC", "fee_bps": 25, "volatility_bps": 15}
+      ]
+    },
+    {
+      "name": "WETH/USDT",
+      "base_price": 3010.0,
+      "venues": [
+        {"name": "VenueA", "fee_bps": 30, "volatility_bps": 18},
+        {"name": "VenueB", "fee_bps": 30, "volatility_bps": 22}
+      ]
+    },
+    {
+      "name": "WBTC/USDC",
+      "base_price": 70500.0,
+      "venues": [
+        {"name": "VenueA", "fee_bps": 30, "volatility_bps": 12},
+        {"name": "VenueB", "fee_bps": 25, "volatility_bps": 16},
+        {"name": "VenueC", "fee_bps": 25, "volatility_bps": 14}
+      ]
+    }
+  ],
+  "trade_size": "1.5",
+  "min_spread_bps": 15,
+  "min_profit": "0.005",
+  "estimated_cost": "0.003",
+  "slippage_bps": 15,
+  "iterations": 20,
+  "poll_interval_seconds": 0
+}

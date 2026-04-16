@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "trading-platform"
 version = "0.1.0"
 description = "Shared infrastructure for building trading bots"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [{name = "Tamir Wainstain"}]
 
@@ -19,10 +19,10 @@ postgres = ["psycopg2-binary>=2.9"]
 alerting = ["requests>=2.28"]
 api = ["fastapi>=0.100", "uvicorn>=0.20"]
 all = ["trading-platform[postgres,alerting,api]"]
-dev = ["pytest>=7.0", "trading-platform[all]"]
+dev = ["pytest>=7.0", "httpx>=0.24", "trading-platform[all]"]
 
 [tool.setuptools]
-py-modules = ["config", "contracts", "data", "observability"]
+py-modules = ["contracts"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

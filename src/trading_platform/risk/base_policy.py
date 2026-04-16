@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Protocol
 
-from contracts import RiskVerdict
+from trading_platform.contracts import RiskVerdict
 
 logger = logging.getLogger(__name__)
 

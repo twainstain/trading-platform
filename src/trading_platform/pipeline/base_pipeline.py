@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any, Protocol
 
-from contracts import SubmissionRef, VerificationOutcome
+from trading_platform.contracts import SubmissionRef, VerificationOutcome
 
 logger = logging.getLogger(__name__)
 

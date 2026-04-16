@@ -7,9 +7,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from contracts import RiskVerdict, SubmissionRef, VerificationOutcome
-from pipeline import BasePipeline, PipelineResult, PriorityQueue, QueuedItem
-from pipeline.base_pipeline import ZERO
+from trading_platform.contracts import RiskVerdict, SubmissionRef, VerificationOutcome
+from trading_platform.pipeline import BasePipeline, PipelineResult, PriorityQueue, QueuedItem
+from trading_platform.pipeline.base_pipeline import ZERO
 
 
 class StubPipeline(BasePipeline):

@@ -11,10 +11,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from config import find_env_file, load_env
-from pipeline import BasePipeline
-from contracts import RiskVerdict
-from risk import RuleBasedPolicy
+from trading_platform.config import find_env_file, load_env
+from trading_platform.pipeline import BasePipeline
+from trading_platform.contracts import RiskVerdict
+from trading_platform.risk import RuleBasedPolicy
 
 
 class AlwaysApproveRule:
@@ -124,14 +124,14 @@ class TradingPlatformImportSmokeTests(unittest.TestCase):
                 sys.executable,
                 "-c",
                 (
-                    "import alerting, config, contracts, data, observability, pipeline, risk; "
-                    "from alerting import AlertDispatcher, BaseAlerter; "
-                    "from config import find_env_file, load_env; "
-                    "from contracts import RiskVerdict, SubmissionRef, VerificationOutcome; "
-                    "from data import TTLCache; "
-                    "from observability import MetricsCollector; "
-                    "from pipeline import BasePipeline, PipelineResult, PriorityQueue; "
-                    "from risk import RuleBasedPolicy, CircuitBreaker"
+                    "import trading_platform; "
+                    "from trading_platform.alerting import AlertDispatcher, BaseAlerter; "
+                    "from trading_platform.config import find_env_file, load_env; "
+                    "from trading_platform.contracts import RiskVerdict, SubmissionRef, VerificationOutcome; "
+                    "from trading_platform.data import TTLCache; "
+                    "from trading_platform.observability import MetricsCollector; "
+                    "from trading_platform.pipeline import BasePipeline, PipelineResult, PriorityQueue; "
+                    "from trading_platform.risk import RuleBasedPolicy, CircuitBreaker"
                 ),
             ],
             cwd=repo_root,

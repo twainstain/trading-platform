@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from alerting import AlertDispatcher, BaseAlerter
+from trading_platform.alerting import AlertDispatcher, BaseAlerter
 
 
 class FakeEmail:

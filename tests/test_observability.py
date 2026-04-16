@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from observability import MetricsCollector
+from trading_platform.observability import MetricsCollector
 
 
 class MetricsTests(unittest.TestCase):
