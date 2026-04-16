@@ -8,7 +8,7 @@ build/
 .env
 *.db
 logs/
-data/
+/data/
 .pytest_cache/
 .mypy_cache/
 .venv/
