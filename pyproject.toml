@@ -1,12 +1,12 @@
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "trading-platform"
 version = "0.1.0"
 description = "Shared infrastructure for building trading bots"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [{name = "Tamir Wainstain"}]
 
